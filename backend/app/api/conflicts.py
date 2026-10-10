@@ -67,6 +67,13 @@ def get_conflict_center_diagnostics(
             if a.is_locked and a.timeslot_id and a.room_id:
                 locked_map[a.exam_id] = (a.timeslot_id, a.room_id)
 
+    is_pre_opt = (
+        active_ver is None
+        or active_ver.solver_status in ("PRE_OPTIMIZATION", "DRAFT", "PENDING")
+        or (active_ver.quality_score or 0.0) == 0.0
+        or len(assignments) == 0
+    )
+
     # 1. Independent validation violations
     validator = TimetableValidator(
         exams=exam_dicts,
@@ -75,7 +82,8 @@ def get_conflict_center_diagnostics(
         enrollments=enrollments_by_exam,
         assignments=assignments,
         locked_assignments=locked_map,
-        students={s.id: {"student_id": s.student_id, "name": s.name} for s in students}
+        students={s.id: {"student_id": s.student_id, "name": s.name} for s in students},
+        is_pre_optimization=is_pre_opt
     )
     val_res = validator.validate()
 
@@ -130,6 +138,7 @@ def get_conflict_center_diagnostics(
     return {
         "is_feasible": val_res.is_feasible,
         "is_complete": val_res.is_complete,
+        "is_pre_optimization": is_pre_opt,
         "total_conflicts": len(conflicts),
         "hard_violations_count": val_res.hard_constraint_violations_count,
         "conflicts": conflicts

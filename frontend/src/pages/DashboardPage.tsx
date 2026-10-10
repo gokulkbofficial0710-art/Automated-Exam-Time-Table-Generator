@@ -4,8 +4,8 @@ import { api } from '../api/client';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, Users, Building2, Clock, CheckCircle2,
-  AlertOctagon, Lock, Sparkles, RefreshCw, Download,
-  ExternalLink, TrendingUp, ShieldAlert, Award, FlaskConical
+  AlertOctagon, Lock, RefreshCw, Download,
+  ExternalLink, TrendingUp, ShieldAlert, Award, FlaskConical, CalendarCheck
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -47,7 +47,7 @@ export const DashboardPage: React.FC = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3 text-slate-400">
           <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm">Connecting to timetable optimization core...</p>
+          <p className="text-sm">Loading examination management system...</p>
         </div>
       </div>
     );
@@ -104,10 +104,10 @@ export const DashboardPage: React.FC = () => {
               </div>
               <p className="text-xs text-slate-600 mt-1">
                 {isPreOptimization
-                  ? `Active schedule '${dashboard.active_version_name || 'Baseline'}' is currently in pre-optimization draft state. Click 'Extract Optimized Timetable' to run the CP-SAT engine and compute optimal schedule quality.`
+                  ? `Active schedule '${dashboard.active_version_name || 'Baseline'}' is currently in pre-optimization draft state. Click 'Extract Optimized Timetable' to run the scheduler and compute conflict-free exam allocations.`
                   : dashboard.is_valid_timetable
                   ? `Active schedule '${dashboard.active_version_name || 'Active Schedule'}' satisfies student clashing, venue capacity, duration, and room suitability constraints.`
-                  : 'Independent validator flagged hard-constraint collisions. Run the CP-SAT solver or resolve locks in the Conflict Center.'}
+                  : 'Independent validator flagged hard-constraint collisions. Run the schedule optimizer or resolve locks in the Conflict Center.'}
               </p>
             </div>
           </div>
@@ -118,7 +118,7 @@ export const DashboardPage: React.FC = () => {
                 to="/optimizer"
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+                <CalendarCheck className="w-3.5 h-3.5 text-indigo-200" />
                 <span>Extract Optimized Timetable</span>
               </Link>
             ) : (
@@ -126,11 +126,11 @@ export const DashboardPage: React.FC = () => {
                 to="/optimizer"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition"
               >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+                <CalendarCheck className="w-3.5 h-3.5 text-indigo-300" />
                 Re-Optimize Schedule
               </Link>
             )}
-            {!dashboard.is_valid_timetable && (
+            {!isPreOptimization && !dashboard.is_valid_timetable && (
               <Link
                 to="/conflicts"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-300 transition"
@@ -261,11 +261,11 @@ export const DashboardPage: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-md bg-indigo-100 text-indigo-700">
-                  <Sparkles className="w-4 h-4" />
+                  <CalendarCheck className="w-4 h-4" />
                 </div>
                 <div className="text-left">
-                  <div className="font-semibold text-slate-900">CP-SAT Full Optimization</div>
-                  <div className="text-[11px] text-slate-500">Reconstruct globally optimal timetable</div>
+                  <div className="font-semibold text-slate-900">Schedule Optimizer</div>
+                  <div className="text-[11px] text-slate-500">Generate conflict-free examination schedule</div>
                 </div>
               </div>
               <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
@@ -295,11 +295,11 @@ export const DashboardPage: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-md bg-emerald-100 text-emerald-700">
-                    <Sparkles className={`w-4 h-4 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
+                    <CheckCircle2 className={`w-4 h-4 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
                   </div>
                   <div className="text-left">
                     <div className="font-semibold text-emerald-950">
-                      {autoResolveMutation.isPending ? 'Resolving via CP-SAT...' : 'Auto-Resolve All Clashes'}
+                      {autoResolveMutation.isPending ? 'Resolving Violations...' : 'Auto-Resolve All Clashes'}
                     </div>
                     <div className="text-[11px] text-slate-600">Eliminate all {totalClashes} hard violations</div>
                   </div>
@@ -328,7 +328,7 @@ export const DashboardPage: React.FC = () => {
             ) : (
               <button
                 onClick={() => {
-                  if (window.confirm("This will inject an artificial clash to demonstrate the conflict diagnostics engine. Continue?")) {
+                  if (window.confirm("This will inject a test clash to audit conflict detection rules. Continue?")) {
                     infeasibleMutation.mutate();
                   }
                 }}
@@ -344,7 +344,7 @@ export const DashboardPage: React.FC = () => {
                     <div className="text-[11px] text-slate-500">Test diagnostics on deliberate clash</div>
                   </div>
                 </div>
-                <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded text-slate-700 font-mono font-semibold">DEMO</span>
+                <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded text-slate-700 font-mono font-semibold">TEST</span>
               </button>
             )}
           </div>
@@ -364,7 +364,7 @@ export const DashboardPage: React.FC = () => {
                   disabled={autoResolveMutation.isPending}
                   className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition disabled:opacity-50 cursor-pointer"
                 >
-                  <Sparkles className={`w-3 h-3 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
+                  <CheckCircle2 className={`w-3 h-3 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
                   Auto-Resolve
                 </button>
               )}
@@ -375,7 +375,22 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="mt-4 space-y-3">
-            {conflicts?.conflicts && conflicts.conflicts.length > 0 ? (
+            {isPreOptimization ? (
+              <div className="p-8 text-center text-slate-500 flex flex-col items-center justify-center space-y-2 bg-slate-50/50 rounded-lg border border-slate-100">
+                <Clock className="w-8 h-8 text-amber-500" />
+                <p className="text-sm font-semibold text-slate-800">Draft Baseline — Schedule Unallocated</p>
+                <p className="text-xs text-slate-500 max-w-md">
+                  The active timetable is in draft pre-optimization baseline state. Hard-constraint conflict audit will monitor examinations once the schedule is extracted.
+                </p>
+                <Link
+                  to="/optimizer"
+                  className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition"
+                >
+                  <CalendarCheck className="w-3.5 h-3.5 text-indigo-300" />
+                  Extract Optimized Timetable
+                </Link>
+              </div>
+            ) : conflicts?.conflicts && conflicts.conflicts.length > 0 ? (
               conflicts.conflicts.slice(0, 3).map((c, i) => (
                 <div key={i} className="p-3.5 rounded-lg bg-rose-50/70 border border-rose-200 flex items-start gap-3">
                   <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />

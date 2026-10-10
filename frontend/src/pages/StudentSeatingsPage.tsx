@@ -6,7 +6,7 @@ import { StudentSeatingResponse, DepartmentSeatingSummary } from '../types';
 import {
   GraduationCap, Search, FileDown, FileText, ChevronDown, ChevronUp,
   Building2, Clock, Calendar, ShieldCheck, CheckCircle2,
-  Users, RefreshCw, Printer, Filter, Sparkles
+  Users, RefreshCw, Printer, Filter, CalendarCheck
 } from 'lucide-react';
 
 export const StudentSeatingsPage: React.FC = () => {
@@ -103,7 +103,7 @@ export const StudentSeatingsPage: React.FC = () => {
             to="/optimizer"
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition shrink-0"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+            <CalendarCheck className="w-3.5 h-3.5 text-indigo-200" />
             Extract Optimized Timetable
           </Link>
         </div>
@@ -338,7 +338,7 @@ export const StudentSeatingsPage: React.FC = () => {
           </h3>
           <p className="text-xs text-slate-500 mt-1.5 max-w-md mx-auto">
             {isPreOptimization
-              ? 'Student seating allocations are cleared while in baseline draft state. Click below to extract the optimized timetable via Google OR-Tools CP-SAT to generate student schedules, examination venues, and hall admit cards.'
+              ? 'Student seating allocations are cleared while in baseline draft state. Click below to extract the optimized timetable to generate student schedules, examination venues, and hall admit cards.'
               : 'No students match the selected department filter or search query. Try choosing "All Departments" or clearing search.'}
           </p>
           {isPreOptimization && (
@@ -347,7 +347,7 @@ export const StudentSeatingsPage: React.FC = () => {
                 to="/optimizer"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
               >
-                <Sparkles className="w-4 h-4 text-indigo-200" />
+                <CalendarCheck className="w-4 h-4 text-indigo-200" />
                 Extract Optimized Timetable
               </Link>
             </div>

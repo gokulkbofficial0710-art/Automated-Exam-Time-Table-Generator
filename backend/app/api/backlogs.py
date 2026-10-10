@@ -76,19 +76,19 @@ def create_backlog(
 
     sem_type = req.semester_type or inferred_sem_type
 
-    # Weekend scheduling: Odd Semester backlogs are held on Saturday/Sunday
+    # Saturday scheduling: Backlogs are held strictly on Saturday (Sundays off)
     existing_count = db.query(BacklogRecord).count()
-    if not req.exam_date or not req.exam_day:
-        # Distribute across Saturday Dec 19 and Sunday Dec 20
-        if existing_count % 2 == 0:
-            exam_date = "2026-12-19"
-            exam_day = "Saturday"
-        else:
-            exam_date = "2026-12-20"
-            exam_day = "Sunday"
+    if not req.exam_date or not req.exam_day or (req.exam_day and req.exam_day.lower() == "sunday"):
+        exam_date = "2026-12-19"
+        exam_day = "Saturday"
     else:
         exam_date = req.exam_date
         exam_day = req.exam_day
+
+    # Session period on Saturday (alternate Morning vs Afternoon if not specified)
+    period = req.period or ("Morning" if existing_count % 2 == 0 else "Afternoon")
+    start_time = req.start_time or ("09:30:00" if period == "Morning" else "14:00:00")
+    end_time = req.end_time or ("12:30:00" if period == "Morning" else "17:00:00")
 
     # Hall / Room allocation
     room_code = req.room_code or ("AUD-MAIN" if existing_count % 3 == 0 else "HALL-101" if existing_count % 3 == 1 else "LAB-COMP")
@@ -113,9 +113,9 @@ def create_backlog(
         course_name=req.course_name.strip(),
         exam_date=exam_date,
         exam_day=exam_day,
-        start_time=req.start_time or "09:30:00",
-        end_time=req.end_time or "12:30:00",
-        period=req.period or "Morning",
+        start_time=start_time,
+        end_time=end_time,
+        period=period,
         room_code=room_code,
         room_name=room_name,
         seat_number=seat_num,

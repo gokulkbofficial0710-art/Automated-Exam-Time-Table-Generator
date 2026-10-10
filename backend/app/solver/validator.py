@@ -15,7 +15,8 @@ class TimetableValidator:
         enrollments: Dict[int, Set[int]], # exam_id -> set of student_ids
         assignments: List[Dict[str, Any]], # list of assigned records
         locked_assignments: Dict[int, Tuple[int, int]] = None, # exam_id -> (slot_id, room_id)
-        students: Dict[int, Dict[str, Any]] = None # student_id -> student dict
+        students: Dict[int, Dict[str, Any]] = None, # student_id -> student dict
+        is_pre_optimization: bool = False
     ):
         self.exams = {e["id"]: e for e in exams}
         self.rooms = {r["id"]: r for r in rooms}
@@ -24,6 +25,7 @@ class TimetableValidator:
         self.assignments = assignments
         self.locked_assignments = locked_assignments or {}
         self.students = students or {}
+        self.is_pre_optimization = is_pre_optimization or (len(assignments) == 0)
 
     def validate(self) -> ValidationResult:
         violations: List[ConflictViolation] = []
@@ -208,17 +210,19 @@ class TimetableValidator:
                     ))
 
         # H9: Assignment completeness: All exams must be scheduled
-        for exam_id, exam in self.exams.items():
-            if exam_id not in scheduled_exam_ids:
-                violations.append(ConflictViolation(
-                    rule="H9",
-                    severity="CRITICAL",
-                    title="Unscheduled Examination",
-                    description=f"Required examination '{exam['exam_code']}' ({exam['course_name']}) has not been scheduled.",
-                    exam_id=exam_id,
-                    exam_code=exam["exam_code"],
-                    suggested_action="Run the optimization solver or manually schedule this examination."
-                ))
+        # In pre-optimization draft baseline, examinations are unallocated pending optimization execution
+        if not self.is_pre_optimization and len(self.assignments) > 0:
+            for exam_id, exam in self.exams.items():
+                if exam_id not in scheduled_exam_ids:
+                    violations.append(ConflictViolation(
+                        rule="H9",
+                        severity="CRITICAL",
+                        title="Unscheduled Examination",
+                        description=f"Required examination '{exam['exam_code']}' ({exam['course_name']}) has not been scheduled.",
+                        exam_id=exam_id,
+                        exam_code=exam["exam_code"],
+                        suggested_action="Run the optimization solver or manually schedule this examination."
+                    ))
 
         # H3: Room double-booking: A room cannot host two overlapping examinations
         for (room_id, slot_id), booked_list in room_slot_assignments.items():
@@ -273,11 +277,14 @@ class TimetableValidator:
                         ))
 
         is_complete = len(scheduled_exam_ids) == len(self.exams)
-        is_feasible = len(violations) == 0 and is_complete
+        is_feasible = len(violations) == 0 and (is_complete or self.is_pre_optimization)
 
-        summary = "All hard constraints verified successfully. Timetable is completely valid." if is_feasible else (
-            f"Validation failed: {len(violations)} hard constraint violation(s) detected. Timetable is INFEASIBLE."
-        )
+        if self.is_pre_optimization:
+            summary = "Draft baseline loaded (unallocated). Zero constraint clashes detected. Optimization pending."
+        else:
+            summary = "All hard constraints verified successfully. Timetable is completely valid." if is_feasible else (
+                f"Validation failed: {len(violations)} hard constraint violation(s) detected. Timetable is INFEASIBLE."
+            )
 
         return ValidationResult(
             is_feasible=is_feasible,

@@ -617,7 +617,7 @@ def generate_backlogs_pdf(
     # 1. Header
     dept_label = f"Department: {department_filter}" if department_filter and department_filter != "ALL" else "All Academic Departments"
     elements.append(Paragraph("<b>UNIVERSITY EXAMINATION REGISTRY • BACKLOG & ARREARS SCHEDULE</b>", title_style))
-    elements.append(Paragraph(f"Special Weekend Examination Sessions (Saturday & Sunday) • Fall 2026 Academic Term • {dept_label}", sub_style))
+    elements.append(Paragraph(f"Special Saturday Examination Sessions (Sundays Off) • Fall 2026 Academic Term • {dept_label}", sub_style))
 
     # 2. Metric Summary
     total_bk = len(backlogs)
@@ -628,8 +628,8 @@ def generate_backlogs_pdf(
     summary_data = [
         [
             Paragraph(f"<b>Total Backlog Candidates:</b> {total_bk}", td_style),
-            Paragraph(f"<b>Odd Sem Arrears (Weekend):</b> {odd_cnt}", td_style),
-            Paragraph(f"<b>Weekend Exam Sessions:</b> {sessions_cnt}", td_style),
+            Paragraph(f"<b>Odd Sem Arrears:</b> {odd_cnt}", td_style),
+            Paragraph(f"<b>Saturday Exam Sessions:</b> {sessions_cnt}", td_style),
             Paragraph(f"<b>Allocated Exam Halls:</b> {venues_cnt}", td_style),
         ]
     ]
@@ -894,7 +894,7 @@ def generate_backlog_admit_card_pdf(backlog: Dict[str, Any]) -> bytes:
     elements.append(Paragraph("MANDATORY INSTRUCTIONS FOR ARREAR & BACKLOG CANDIDATES", sec_title))
     instructions = [
         "1. <b>Identity Verification:</b> Candidates must produce this official Admit Card along with their valid University Photo ID card.",
-        "2. <b>Weekend Timings:</b> Backlog re-examinations are conducted exclusively on Saturdays and Sundays to avoid conflict with standard weekday curriculum lectures.",
+        "2. <b>Exam Timings:</b> Backlog re-examinations are conducted exclusively on Saturdays (Sundays are observed as holidays) to avoid conflict with standard weekday curriculum lectures.",
         "3. <b>Reporting Time:</b> Arrive at the examination hall at least 30 minutes prior to session start. No entry is permitted after 15 minutes from commencement.",
         "4. <b>Desk Allocation:</b> The candidate must occupy only the assigned desk indicated above. Any unauthorized seating change will result in disqualification.",
         "5. <b>Prohibited Items:</b> Mobile phones, smart devices, smartwatches, and programmable calculators are strictly prohibited in the exam hall.",

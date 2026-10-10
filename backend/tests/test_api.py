@@ -47,11 +47,20 @@ def test_get_timeslots_api():
     assert len(data) >= 8
 
 def test_get_timetable_api():
+    # In baseline reset state, timetable grid is empty
     response = client.get("/api/timetable")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) > 0
+    assert len(data) == 0
+
+    # After optimization extraction, timetable grid is populated
+    gen_res = client.post("/api/timetable/generate", json={"time_limit_seconds": 5})
+    assert gen_res.status_code == 200
+    response2 = client.get("/api/timetable")
+    assert response2.status_code == 200
+    data2 = response2.json()
+    assert len(data2) >= 20
 
 def test_validate_endpoint():
     response = client.post("/api/timetable/validate")

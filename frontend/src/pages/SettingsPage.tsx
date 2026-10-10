@@ -74,16 +74,20 @@ export const SettingsPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => demoMutation.mutate(false)}
+            onClick={() => {
+              if (window.confirm("Are you sure want to reset all the data?\nReset timetable schedule to unallocated baseline state?")) {
+                demoMutation.mutate(false);
+              }
+            }}
             disabled={demoMutation.isPending}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${demoMutation.isPending ? 'animate-spin' : ''}`} />
-            Load Deterministic Demo
+            Reset to Draft Baseline
           </button>
           <button
             onClick={() => {
-              if (window.confirm("This will inject an artificial clash to demonstrate the conflict diagnostics engine. Continue?")) {
+              if (window.confirm("This will inject a test clash to audit conflict detection rules. Continue?")) {
                 infeasibleMutation.mutate();
               }
             }}
@@ -91,7 +95,7 @@ export const SettingsPage: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
           >
             <FlaskConical className="w-3.5 h-3.5 text-slate-500" />
-            Test Infeasible Demo
+            Test Conflict Scenario
           </button>
         </div>
       </div>

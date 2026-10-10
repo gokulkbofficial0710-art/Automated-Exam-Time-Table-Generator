@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { Assignment, Room, TimeSlot } from '../types';
 import {
   Calendar as CalendarIcon, Clock, Building2, Lock, Unlock,
   Search, Filter, Edit3, ShieldAlert, CheckCircle2, User,
-  AlertTriangle, X, Save
+  AlertTriangle, X, Save, CalendarCheck
 } from 'lucide-react';
 
 export const CalendarPage: React.FC = () => {
@@ -17,6 +18,11 @@ export const CalendarPage: React.FC = () => {
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
 
   // Queries
+  const { data: dashboard } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: api.getDashboard,
+  });
+
   const { data: assignments = [], isLoading: loadingAssignments } = useQuery({
     queryKey: ['timetable', selectedDept, search],
     queryFn: () => api.getTimetable({
@@ -89,8 +95,37 @@ export const CalendarPage: React.FC = () => {
     });
   }, [slots, filteredAssignments]);
 
+  const isPreOptimization = dashboard ? dashboard.quality_score === 0 : false;
+  const isTimetableEmpty = (isPreOptimization || assignments.length === 0) && selectedDept === 'ALL' && !search && selectedRoom === 'ALL';
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Draft Baseline Banner */}
+      {isPreOptimization && (
+        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-amber-100 text-amber-700 shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Draft Baseline State — Timetable Grid is Unallocated (Quality: 0%)
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                The active schedule is in draft pre-optimization baseline state. All examination slots, rooms, and seatings are unallocated until the timetable optimizer is executed.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/optimizer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition shrink-0"
+          >
+            <CalendarCheck className="w-3.5 h-3.5 text-indigo-300" />
+            Extract Optimized Timetable
+          </Link>
+        </div>
+      )}
+
       {/* Header and Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
         <div>
@@ -174,9 +209,50 @@ export const CalendarPage: React.FC = () => {
         </div>
       </div>
 
-      {/* VIEW MODE 1: Session Grid */}
-      {viewMode === 'grid' && (
-        <div className="space-y-6">
+      {/* Main Content: Empty State or Scheduled Timetable Views */}
+      {isTimetableEmpty ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+            <CalendarIcon className="w-8 h-8 text-slate-400" />
+          </div>
+          <div className="max-w-md mx-auto space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              Draft Baseline — Unallocated
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Examination Timetable Grid is Empty</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              No examinations are currently scheduled. The timetable has been reset to an unallocated baseline state. To assign examinations to time slots and venues, extract the optimized timetable.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              to="/optimizer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition"
+            >
+              <CalendarCheck className="w-4 h-4 text-indigo-300" />
+              Extract Optimized Timetable
+            </Link>
+          </div>
+        </div>
+      ) : filteredAssignments.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs space-y-3">
+          <Search className="w-8 h-8 text-slate-300 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-800">No Matching Examinations Found</h3>
+          <p className="text-xs text-slate-500">
+            No examinations match your current search or filter criteria.
+          </p>
+          <button
+            onClick={() => { setSearch(''); setSelectedDept('ALL'); setSelectedRoom('ALL'); }}
+            className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium cursor-pointer"
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* VIEW MODE 1: Session Grid */}
+          {viewMode === 'grid' && (
+            <div className="space-y-6">
           {gridData.map(({ date, slots: dateSlots }) => (
             <div key={date} className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -335,6 +411,8 @@ export const CalendarPage: React.FC = () => {
             );
           })}
         </div>
+      )}
+      </>
       )}
 
       {/* EDIT ASSIGNMENT MODAL */}

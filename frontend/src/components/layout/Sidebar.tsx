@@ -10,8 +10,6 @@ import {
   Clock,
   AlertTriangle,
   Cpu,
-  BarChart3,
-  Database,
   CheckCircle2,
   History
 } from 'lucide-react';
@@ -45,12 +43,10 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: 'Solver & Diagnostics',
+    title: 'Schedule Operations & Audit',
     items: [
-      { to: '/conflicts', label: 'Conflict Center', icon: AlertTriangle },
-      { to: '/optimizer', label: 'Optimization Engine', icon: Cpu },
-      { to: '/analytics', label: 'Quality & Metrics', icon: BarChart3 },
-      { to: '/settings', label: 'Data & Versions', icon: Database },
+      { to: '/conflicts', label: 'Conflict Resolution', icon: AlertTriangle },
+      { to: '/optimizer', label: 'Schedule Optimizer', icon: Cpu },
     ],
   },
 ];
@@ -90,14 +86,14 @@ export const Sidebar: React.FC = () => {
 
       <div className="p-3.5 border-t border-slate-200 bg-slate-50/70 text-xs text-slate-600">
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-slate-700">CP-SAT Engine</span>
+          <span className="font-semibold text-slate-700">Registrar Portal</span>
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            Active
+            Operational
           </span>
         </div>
         <p className="mt-1 text-[11px] text-slate-500 leading-tight">
-          Constraint Programming Model v9.8
+          Academic Term: Fall 2026
         </p>
       </div>
     </aside>

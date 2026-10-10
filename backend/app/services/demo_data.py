@@ -267,238 +267,28 @@ def load_demo_dataset(db: Session, include_infeasible: bool = False) -> dict:
             "total_assigned_seats": 218,
             "total_capacity_used": 402,
             "reassigned_exams_count": 0,
-            "preferred_slot_violations": 2,
-            "undesirable_sessions_count": 3,
+            "preferred_slot_violations": 0,
+            "undesirable_sessions_count": 0,
             "total_objective_cost": 0.0,
         },
         diagnostics=[],
         created_by="Academic Registrar",
-        notes="Pre-optimization draft schedule. Quality is 0% until CP-SAT optimization is executed."
+        notes="Pre-optimization baseline draft. Timetable grid is empty until optimization is executed."
     )
     db.add(initial_version)
     db.commit()
 
-    # Deterministic baseline assignments spec (instant creation without 10-second solver delay)
-    baseline_specs = [
-        ("EXAM-CS101", "SLOT-D2-M", "SEM-A", 15, False),
-        ("EXAM-CS201", "SLOT-D4-M", "SEM-A", 3, False),
-        ("EXAM-CS301", "SLOT-D4-M", "ROOM-305", 9, False),
-        ("EXAM-CS350", "SLOT-D3-M", "SEM-A", 9, False),
-        ("EXAM-CS420", "SLOT-D2-M", "LAB-COMP", 9, False),
-        ("EXAM-MA101", "SLOT-D1-A", "LAB-COMP", 39, False),
-        ("EXAM-MA201", "SLOT-D3-M", "ROOM-305", 12, False),
-        ("EXAM-MA204", "SLOT-D3-A", "SEM-A", 3, False),
-        ("EXAM-MA310", "SLOT-D4-A", "SEM-A", 12, False),
-        ("EXAM-PHY101", "SLOT-D3-A", "LAB-COMP", 12, False),
-        ("EXAM-PHY202", "SLOT-D2-M", "ROOM-305", 12, False),
-        ("EXAM-PHY305", "SLOT-D4-A", "LAB-COMP", 12, False),
-        ("EXAM-EE101", "SLOT-D2-A", "SEM-A", 12, False),
-        ("EXAM-EE210", "SLOT-D4-M", "LAB-COMP", 12, False),
-        ("EXAM-EE320", "SLOT-D3-A", "ROOM-305", 12, False),
-        ("EXAM-BUS101", "SLOT-D1-M", "ROOM-305", 12, False),
-        ("EXAM-BUS205", "SLOT-D4-A", "ROOM-305", 12, False),
-        ("EXAM-BUS310", "SLOT-D2-A", "ROOM-305", 12, False),
-        ("EXAM-BUS401", "SLOT-D3-M", "LAB-COMP", 12, False),
-        ("EXAM-HUM102", "SLOT-D1-A", "SEM-A", 9, False),
-        ("EXAM-ENG201", "SLOT-D1-M", "SEM-A", 0, False),
-        ("EXAM-CS499", "SLOT-D1-M", "AUD-MAIN", 1, True),
-    ]
-
-    exam_map = {e.exam_code: e for e in created_exams}
-    slot_map = {s.slot_code: s for s in created_slots}
-    room_map = {r.room_code: r for r in created_rooms}
-
-    assignments_to_create = []
-    for exam_code, slot_code, room_code, student_cnt, is_locked in baseline_specs:
-        if exam_code in exam_map and slot_code in slot_map and room_code in room_map:
-            assignments_to_create.append(TimetableAssignment(
-                timetable_id=initial_version.id,
-                exam_id=exam_map[exam_code].id,
-                timeslot_id=slot_map[slot_code].id,
-                room_id=room_map[room_code].id,
-                assigned_student_count=student_cnt,
-                is_locked=is_locked,
-                source="DRAFT",
-                validation_status="VALID",
-                conflict_reasons=[]
-            ))
-
-    db.bulk_save_objects(assignments_to_create)
-
+    # Pre-optimization state: Timetable Grid and Backlogs remain empty until the user runs/extracts the optimizer.
     # Audit log entry
     audit = AuditLog(
         action="IMPORT",
         entity_type="DATASET",
-        entity_id="DEMO_V1",
-        user="System Admin",
+        entity_id="BASELINE_V1",
+        user="Academic Registrar",
         details={"exams_count": len(created_exams), "students_count": len(created_students), "rooms_count": len(created_rooms)}
     )
-    # Seed deterministic backlog records (Old students writing Odd/Even backlogs on weekend Saturday & Sunday)
-    demo_backlogs = [
-        BacklogRecord(
-            student_code="STU-2026-1002",
-            student_name="Jordan Garcia",
-            department="Computer Science",
-            student_type="Old Student",
-            current_semester="Semester 3",
-            backlog_semester="Semester 1",
-            semester_type="Odd Semester",
-            course_code="MA101",
-            course_name="Calculus I & Analytical Geometry",
-            exam_date="2026-12-19",
-            exam_day="Saturday",
-            start_time="09:30:00",
-            end_time="12:30:00",
-            period="Morning",
-            room_code="AUD-MAIN",
-            room_name="Grand University Auditorium",
-            seat_number="AUD-MAIN-BK01",
-            status="SCHEDULED"
-        ),
-        BacklogRecord(
-            student_code="STU-2026-1004",
-            student_name="Elena Rodriguez",
-            department="Computer Science",
-            student_type="Old Student",
-            current_semester="Semester 3",
-            backlog_semester="Semester 1",
-            semester_type="Odd Semester",
-            course_code="CS101",
-            course_name="Introduction to Computer Science",
-            exam_date="2026-12-19",
-            exam_day="Saturday",
-            start_time="14:00:00",
-            end_time="17:00:00",
-            period="Afternoon",
-            room_code="LAB-COMP",
-            room_name="Advanced Computing Laboratory",
-            seat_number="LAB-COMP-BK02",
-            status="SCHEDULED"
-        ),
-        BacklogRecord(
-            student_code="STU-2026-1007",
-            student_name="Lucas Williams",
-            department="Mathematics",
-            student_type="Old Student",
-            current_semester="Semester 5",
-            backlog_semester="Semester 3",
-            semester_type="Odd Semester",
-            course_code="MA201",
-            course_name="Multivariable Calculus",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
-            start_time="09:30:00",
-            end_time="12:30:00",
-            period="Morning",
-            room_code="HALL-101",
-            room_name="Science Lecture Hall A",
-            seat_number="HALL-101-BK03",
-            status="SCHEDULED"
-        ),
-        BacklogRecord(
-            student_code="STU-2026-1010",
-            student_name="Emma Davis",
-            department="Physics",
-            student_type="Old Student",
-            current_semester="Semester 5",
-            backlog_semester="Semester 1",
-            semester_type="Odd Semester",
-            course_code="PHY101",
-            course_name="Classical Mechanics",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
-            start_time="14:00:00",
-            end_time="17:00:00",
-            period="Afternoon",
-            room_code="AUD-MAIN",
-            room_name="Grand University Auditorium",
-            seat_number="AUD-MAIN-BK04",
-            status="SCHEDULED"
-        ),
-        BacklogRecord(
-            student_code="STU-2026-1015",
-            student_name="Oliver Hernandez",
-            department="Electrical Eng",
-            student_type="Old Student",
-            current_semester="Semester 3",
-            backlog_semester="Semester 1",
-            semester_type="Odd Semester",
-            course_code="EE101",
-            course_name="Electric Circuits & Network Theory",
-            exam_date="2026-12-19",
-            exam_day="Saturday",
-            start_time="09:30:00",
-            end_time="12:30:00",
-            period="Morning",
-            room_code="HALL-101",
-            room_name="Science Lecture Hall A",
-            seat_number="HALL-101-BK05",
-            status="SCHEDULED"
-        ),
-        BacklogRecord(
-            student_code="STU-2026-1020",
-            student_name="Mia Jackson",
-            department="Business",
-            student_type="Old Student",
-            current_semester="Semester 3",
-            backlog_semester="Semester 1",
-            semester_type="Odd Semester",
-            course_code="BUS101",
-            course_name="Principles of Financial Accounting",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
-            start_time="09:30:00",
-            end_time="12:30:00",
-            period="Morning",
-            room_code="AUD-MAIN",
-            room_name="Grand University Auditorium",
-            seat_number="AUD-MAIN-BK06",
-            status="SCHEDULED"
-        ),
-        BacklogRecord(
-            student_code="STU-2026-1025",
-            student_name="William Smith",
-            department="Computer Science",
-            student_type="New Student",
-            current_semester="Semester 1",
-            backlog_semester="Semester 1",
-            semester_type="Odd Semester",
-            course_code="CS101",
-            course_name="Introduction to Computer Science",
-            exam_date="2026-12-19",
-            exam_day="Saturday",
-            start_time="14:00:00",
-            end_time="17:00:00",
-            period="Afternoon",
-            room_code="LAB-COMP",
-            room_name="Advanced Computing Laboratory",
-            seat_number="LAB-COMP-BK07",
-            status="SCHEDULED"
-        ),
-        BacklogRecord(
-            student_code="STU-2026-1030",
-            student_name="Henry Chen",
-            department="Mathematics",
-            student_type="Old Student",
-            current_semester="Semester 4",
-            backlog_semester="Semester 2",
-            semester_type="Even Semester",
-            course_code="MA204",
-            course_name="Discrete Mathematics",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
-            start_time="14:00:00",
-            end_time="17:00:00",
-            period="Afternoon",
-            room_code="HALL-101",
-            room_name="Science Lecture Hall A",
-            seat_number="HALL-101-BK08",
-            status="SCHEDULED"
-        )
-    ]
-    db.add_all(demo_backlogs)
+    db.add(audit)
     db.commit()
-
     if include_infeasible:
         create_infeasible_scenario(db)
 
@@ -566,8 +356,8 @@ def seed_demo_backlogs_if_empty(db: Session):
             semester_type="Odd Semester",
             course_code="MA201",
             course_name="Multivariable Calculus",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
+            exam_date="2026-12-19",
+            exam_day="Saturday",
             start_time="09:30:00",
             end_time="12:30:00",
             period="Morning",
@@ -586,8 +376,8 @@ def seed_demo_backlogs_if_empty(db: Session):
             semester_type="Odd Semester",
             course_code="PHY101",
             course_name="Classical Mechanics",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
+            exam_date="2026-12-19",
+            exam_day="Saturday",
             start_time="14:00:00",
             end_time="17:00:00",
             period="Afternoon",
@@ -626,8 +416,8 @@ def seed_demo_backlogs_if_empty(db: Session):
             semester_type="Odd Semester",
             course_code="BUS101",
             course_name="Principles of Financial Accounting",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
+            exam_date="2026-12-19",
+            exam_day="Saturday",
             start_time="09:30:00",
             end_time="12:30:00",
             period="Morning",
@@ -666,8 +456,8 @@ def seed_demo_backlogs_if_empty(db: Session):
             semester_type="Even Semester",
             course_code="MA204",
             course_name="Discrete Mathematics",
-            exam_date="2026-12-20",
-            exam_day="Sunday",
+            exam_date="2026-12-19",
+            exam_day="Saturday",
             start_time="14:00:00",
             end_time="17:00:00",
             period="Afternoon",
@@ -701,14 +491,19 @@ def create_infeasible_scenario(db: Session) -> dict:
         if active_ver:
             a_cs = db.query(TimetableAssignment).filter_by(timetable_id=active_ver.id, exam_id=cs101.id).first()
             a_ma = db.query(TimetableAssignment).filter_by(timetable_id=active_ver.id, exam_id=ma101.id).first()
-            if a_cs:
-                a_cs.timeslot_id = slot.id
-                a_cs.room_id = room.id
-                a_cs.is_locked = True
-            if a_ma:
-                a_ma.timeslot_id = slot.id
-                a_ma.room_id = room.id
-                a_ma.is_locked = True
+            if not a_cs:
+                a_cs = TimetableAssignment(timetable_id=active_ver.id, exam_id=cs101.id, assigned_student_count=12)
+                db.add(a_cs)
+            if not a_ma:
+                a_ma = TimetableAssignment(timetable_id=active_ver.id, exam_id=ma101.id, assigned_student_count=12)
+                db.add(a_ma)
+            a_cs.timeslot_id = slot.id
+            a_cs.room_id = room.id
+            a_cs.is_locked = True
+            a_ma.timeslot_id = slot.id
+            a_ma.room_id = room.id
+            a_ma.is_locked = True
+            active_ver.solver_status = "INFEASIBLE"
             db.commit()
 
     return {

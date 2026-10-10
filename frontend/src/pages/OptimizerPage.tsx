@@ -23,7 +23,7 @@ export const OptimizerPage: React.FC = () => {
   const [solveResult, setSolveResult] = useState<any>(null);
 
   // Helper to compute exact schedule dates as per time interval
-  // (Backlogs remain strictly on weekends: Saturday Dec 19 and Sunday Dec 20)
+  // (Backlogs remain strictly on Saturday: Saturday Dec 19, Sundays off)
   const computeScheduleDates = (intervalDays: number) => {
     const base = new Date(2026, 11, 14); // Mon Dec 14, 2026
     const days: { dateStr: string; dayName: string; label: string }[] = [
@@ -53,7 +53,7 @@ export const OptimizerPage: React.FC = () => {
       examDays: days,
       backlogWeekend: {
         sat: '2026-12-19',
-        sun: '2026-12-20'
+        sun: 'Sundays Off'
       }
     };
   };
@@ -118,12 +118,12 @@ export const OptimizerPage: React.FC = () => {
       <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
-            <Cpu className="w-5 h-5" />
+            <CalendarCheck className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Google OR-Tools CP-SAT Scheduling Engine</h2>
+            <h2 className="text-xl font-bold text-slate-900">Automated Examination Scheduler & Optimizer</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Exact Constraint Programming solver configuring multi-objective student, room, duration, and locked rules
+              Constraint satisfaction engine configuring multi-objective student, room, duration, and academic policy rules
             </p>
           </div>
         </div>
@@ -174,7 +174,7 @@ export const OptimizerPage: React.FC = () => {
                   disabled={autoResolveMutation.isPending}
                   className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
                 >
-                  <Sparkles className={`w-3.5 h-3.5 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
                   Auto-Resolve Conflicting Locks
                 </button>
               )}
@@ -458,14 +458,14 @@ export const OptimizerPage: React.FC = () => {
             <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
-                  Backlogs Schedule (Weekends Only)
+                  Backlogs Schedule (Saturday Only)
                 </span>
                 <span className="text-[11px] text-slate-700 font-medium">
-                  Saturday <strong>{scheduleDates.backlogWeekend.sat}</strong> & Sunday <strong>{scheduleDates.backlogWeekend.sun}</strong>
+                  Saturday <strong>{scheduleDates.backlogWeekend.sat}</strong> (Sundays Off)
                 </span>
               </div>
               <span className="text-[10px] text-emerald-700 font-medium">
-                ✓ Locked exclusively to weekends to prevent regular candidate clashes
+                ✓ Locked exclusively to Saturday (Sundays off) to prevent regular candidate clashes
               </span>
             </div>
           </div>
@@ -515,8 +515,8 @@ export const OptimizerPage: React.FC = () => {
             disabled={solveMutation.isPending}
             className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-xs shadow-xs transition disabled:opacity-50 cursor-pointer"
           >
-            <Sparkles className={`w-4 h-4 text-indigo-300 ${solveMutation.isPending ? 'animate-spin' : ''}`} />
-            {solveMutation.isPending ? 'Solving Constraint Model in CP-SAT...' : 'Extract & Execute Timetable Solver'}
+            <CalendarCheck className={`w-4 h-4 text-indigo-300 ${solveMutation.isPending ? 'animate-spin' : ''}`} />
+            {solveMutation.isPending ? 'Computing Conflict-Free Schedule...' : 'Generate & Extract Optimized Timetable'}
           </button>
         </div>
       </form>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import {
   AlertTriangle, ShieldAlert, CheckCircle2, RefreshCw,
-  Filter, ArrowRight, Lightbulb, ExternalLink, Sparkles
+  Filter, ArrowRight, Lightbulb, ExternalLink, Clock, CalendarCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +11,13 @@ export const ConflictsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedSeverity, setSelectedSeverity] = useState('ALL');
   const [selectedRule, setSelectedRule] = useState('ALL');
+
+  const { data: dashboard } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: api.getDashboard,
+  });
+
+  const isPreOptimization = dashboard ? dashboard.quality_score === 0 : false;
 
   const { data: conflictData, isLoading, refetch } = useQuery({
     queryKey: ['conflicts-page', selectedSeverity, selectedRule],
@@ -64,24 +71,32 @@ export const ConflictsPage: React.FC = () => {
 
       {/* Status Bar */}
       <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs ${
-        conflictData?.is_feasible
+        isPreOptimization
+          ? 'bg-amber-50 border-amber-200 text-amber-950'
+          : conflictData?.is_feasible
           ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
           : 'bg-rose-50 border-rose-200 text-rose-950'
       }`}>
         <div className="flex items-center gap-3">
-          {conflictData?.is_feasible ? (
+          {isPreOptimization ? (
+            <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+          ) : conflictData?.is_feasible ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           ) : (
             <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
           )}
           <div>
             <span className="font-bold text-sm text-slate-900">
-              {conflictData?.is_feasible
+              {isPreOptimization
+                ? 'Draft Baseline Loaded — Schedule Unallocated'
+                : conflictData?.is_feasible
                 ? 'All Hard Constraints Satisfied (Feasible)'
                 : `${conflictData?.hard_violations_count || conflicts.length} Active Hard Constraint Violations Detected`}
             </span>
             <p className="text-xs text-slate-600 mt-0.5">
-              {conflictData?.is_feasible
+              {isPreOptimization
+                ? 'Zero clashes or collisions detected. Examinations are unallocated pending optimization.'
+                : conflictData?.is_feasible
                 ? 'No student clashes, room overlaps, or venue capacity breaches found.'
                 : 'The timetable cannot be deployed until all critical hard constraints are resolved.'}
             </p>
@@ -89,22 +104,23 @@ export const ConflictsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {!conflictData?.is_feasible && (
+          {!isPreOptimization && !conflictData?.is_feasible && (
             <button
               onClick={() => autoResolveMutation.mutate()}
               disabled={autoResolveMutation.isPending}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition disabled:opacity-50 cursor-pointer"
             >
-              <Sparkles className={`w-3.5 h-3.5 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
-              {autoResolveMutation.isPending ? 'Resolving via CP-SAT...' : 'Auto-Resolve Violations'}
+              <CheckCircle2 className={`w-3.5 h-3.5 ${autoResolveMutation.isPending ? 'animate-spin' : ''}`} />
+              {autoResolveMutation.isPending ? 'Resolving Violations...' : 'Auto-Resolve Violations'}
             </button>
           )}
 
           <Link
             to="/optimizer"
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs shrink-0"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs shrink-0"
           >
-            Launch Optimizer
+            <CalendarCheck className="w-3.5 h-3.5 text-indigo-300" />
+            {isPreOptimization ? 'Extract Optimized Timetable' : 'Launch Optimizer'}
           </Link>
         </div>
       </div>
@@ -147,7 +163,22 @@ export const ConflictsPage: React.FC = () => {
 
       {/* Conflict List */}
       <div className="space-y-4">
-        {conflicts.length === 0 ? (
+        {isPreOptimization ? (
+          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center flex flex-col items-center justify-center space-y-3 shadow-xs">
+            <Clock className="w-12 h-12 text-amber-500" />
+            <h3 className="text-base font-bold text-slate-900">Draft Baseline State — No Constraint Clashes</h3>
+            <p className="text-xs text-slate-500 max-w-md">
+              The schedule is in unallocated draft baseline state. Constraint rules (H1–H9) are active and will audit for conflicts once the examination schedule is extracted.
+            </p>
+            <Link
+              to="/optimizer"
+              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition"
+            >
+              <CalendarCheck className="w-3.5 h-3.5 text-indigo-300" />
+              Extract Optimized Timetable
+            </Link>
+          </div>
+        ) : conflicts.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl p-12 text-center flex flex-col items-center justify-center space-y-3 shadow-xs">
             <CheckCircle2 className="w-12 h-12 text-emerald-600" />
             <h3 className="text-base font-bold text-slate-900">Zero Conflict Infeasibilities</h3>

@@ -31,7 +31,7 @@ def get_interval_dates(interval_days: int) -> Dict[str, date]:
     - Base start date: Monday Dec 14, 2026
     - Each next day advances by (1 + interval_days) calendar days.
     - Weekends (Sat/Sun) are reserved for study breaks / backlogs, so regular exams advance to Monday.
-    Backlogs alone remain strictly on the weekend (Saturday Dec 19 and Sunday Dec 20).
+    Backlogs alone remain strictly on Saturday (Saturday Dec 19, Sundays off).
     """
     base = date(2026, 12, 14) # Monday
     days = [base]
@@ -54,7 +54,7 @@ def get_interval_dates(interval_days: int) -> Dict[str, date]:
 def update_slot_dates_by_interval(db: Session, interval_days: int):
     """
     Updates all regular examination TimeSlot dates as per the chosen study interval.
-    Backlogs alone remain strictly on weekends (Saturday Dec 19 and Sunday Dec 20).
+    Backlogs alone remain strictly on Saturday (Saturday Dec 19, Sundays off).
     """
     date_map = get_interval_dates(interval_days)
     slots = db.query(TimeSlot).all()
@@ -69,7 +69,7 @@ def update_slot_dates_by_interval(db: Session, interval_days: int):
 def apply_interval_dates(interval_days: int = Query(1, ge=0, le=7), db: Session = Depends(get_db)):
     """
     Updates regular examination slot dates according to the chosen study interval policy.
-    Backlogs alone remain strictly on the weekend (Saturday Dec 19 and Sunday Dec 20).
+    Backlogs alone remain strictly on Saturday (Saturday Dec 19, Sundays off).
     """
     update_slot_dates_by_interval(db, interval_days)
     date_map = get_interval_dates(interval_days)
@@ -80,7 +80,7 @@ def apply_interval_dates(interval_days: int = Query(1, ge=0, le=7), db: Session 
         "dates": formatted,
         "backlog_weekend": {
             "saturday": "2026-12-19",
-            "sunday": "2026-12-20"
+            "sunday": "Off (No Sunday Exams)"
         }
     }
 
@@ -116,6 +116,17 @@ def _format_assignment_response(a: TimetableAssignment) -> AssignmentResponse:
         updated_at=a.updated_at
     )
 
+def check_is_pre_optimization(db: Session) -> bool:
+    ver = db.query(TimetableVersion).filter_by(is_active=True).first()
+    if not ver:
+        return True
+    return (
+        ver.solver_status in ("PRE_OPTIMIZATION", "DRAFT", "PENDING")
+        or (ver.quality_score == 0.0)
+        or "pre-optimization" in (ver.name or "").lower()
+        or (ver.metrics and ver.metrics.get("is_optimized") is False)
+    )
+
 @router.get("", response_model=List[AssignmentResponse])
 def get_current_timetable(
     version_id: Optional[int] = None,
@@ -132,6 +143,9 @@ def get_current_timetable(
         version = db.query(TimetableVersion).filter_by(is_active=True).first()
 
     if not version:
+        return []
+
+    if not version_id and check_is_pre_optimization(db):
         return []
 
     query = db.query(TimetableAssignment).filter(TimetableAssignment.timetable_id == version.id)
@@ -181,7 +195,7 @@ def generate_timetable(req: GenerateRequest, async_job: bool = False, db: Sessio
         return {"status": "JOB_STARTED", "job_id": job_id, "mode": req.mode}
 
     # Update TimeSlot dates dynamically as per chosen study interval policy
-    # (Backlogs alone remain strictly on weekends: Saturday Dec 19 and Sunday Dec 20)
+    # (Backlogs alone remain strictly on Saturday: Saturday Dec 19, Sundays off)
     interval_days = req.study_interval_days if req.study_interval_days is not None else 1
     update_slot_dates_by_interval(db, interval_days)
 
@@ -357,6 +371,12 @@ def validate_timetable(version_id: Optional[int] = None, db: Session = Depends(g
     ass_dicts = [{"exam_id": a.exam_id, "timeslot_id": a.timeslot_id, "room_id": a.room_id, "is_locked": a.is_locked} for a in assignments]
     locked_map = {a.exam_id: (a.timeslot_id, a.room_id) for a in assignments if a.is_locked and a.timeslot_id and a.room_id}
 
+    is_pre_opt = (
+        version.solver_status in ("PRE_OPTIMIZATION", "DRAFT", "PENDING")
+        or (version.quality_score or 0.0) == 0.0
+        or len(assignments) == 0
+    )
+
     validator = TimetableValidator(
         exams=exam_dicts,
         rooms=room_dicts,
@@ -364,7 +384,8 @@ def validate_timetable(version_id: Optional[int] = None, db: Session = Depends(g
         enrollments=en_map,
         assignments=ass_dicts,
         locked_assignments=locked_map,
-        students={s.id: {"student_id": s.student_id, "name": s.name} for s in students}
+        students={s.id: {"student_id": s.student_id, "name": s.name} for s in students},
+        is_pre_optimization=is_pre_opt
     )
     result = validator.validate()
     return result

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
-import { GraduationCap, CheckCircle2, AlertOctagon, RefreshCw, Cpu, Download } from 'lucide-react';
+import { GraduationCap, CheckCircle2, AlertOctagon, RefreshCw, Cpu, Download, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Navbar: React.FC = () => {
@@ -30,9 +30,6 @@ export const Navbar: React.FC = () => {
             <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
               University Examination Scheduling System
             </h1>
-            <span className="hidden md:inline-flex text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-              OR-Tools CP-SAT v9.8
-            </span>
           </div>
           <p className="text-[11px] text-slate-500 font-medium">
             Office of the University Registrar • Fall 2026 Academic Term
@@ -45,14 +42,18 @@ export const Navbar: React.FC = () => {
           <div className="hidden lg:flex items-center gap-3 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs">
             <div className="flex items-center gap-1.5">
               <span className="text-slate-500">Active Schedule:</span>
-              <span className="font-semibold text-slate-800 truncate max-w-[140px]">
-                {dashboard.active_version_name || 'Benchmark Schedule'}
+              <span className="font-semibold text-slate-800 truncate max-w-[150px]">
+                {dashboard.quality_score === 0 ? 'Draft Baseline (Unallocated)' : (dashboard.active_version_name || 'Official Term Schedule')}
               </span>
             </div>
             <div className="h-3.5 w-[1px] bg-slate-200" />
             <div className="flex items-center gap-1.5">
               <span className="text-slate-500">Validation:</span>
-              {dashboard.student_clash_count + dashboard.room_clash_count === 0 ? (
+              {dashboard.quality_score === 0 ? (
+                <span className="inline-flex items-center gap-1 text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  Pending Generation
+                </span>
+              ) : dashboard.student_clash_count + dashboard.room_clash_count === 0 ? (
                 <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5" /> 0 Clashes (Valid)
                 </span>
@@ -64,14 +65,14 @@ export const Navbar: React.FC = () => {
             </div>
             <div className="h-3.5 w-[1px] bg-slate-200" />
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500">Quality:</span>
+              <span className="text-slate-500">Status:</span>
               {dashboard.quality_score === 0 ? (
                 <span className="inline-flex items-center gap-1 font-bold text-slate-600 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded text-[11px]">
-                  0% (Pre-Optimization)
+                  Unscheduled
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px]">
-                  {dashboard.quality_score.toFixed(1)}%
+                  {dashboard.quality_score.toFixed(1)}% Score
                 </span>
               )}
             </div>
@@ -83,17 +84,21 @@ export const Navbar: React.FC = () => {
             to="/optimizer"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition"
           >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>Optimize</span>
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Run Optimizer</span>
           </Link>
           <button
-            onClick={() => demoMutation.mutate()}
+            onClick={() => {
+              if (window.confirm("Are you sure want to reset all the data?\nReset timetable schedule to unallocated baseline state?")) {
+                demoMutation.mutate();
+              }
+            }}
             disabled={demoMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-xs transition"
-            title="Reload deterministic benchmark dataset"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-xs transition cursor-pointer"
+            title="Reset timetable to unallocated baseline"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${demoMutation.isPending ? 'animate-spin' : ''}`} />
-            <span>Reset Demo</span>
+            <span>Reset</span>
           </button>
           <a
             href="/api/export/timetable/pdf"
