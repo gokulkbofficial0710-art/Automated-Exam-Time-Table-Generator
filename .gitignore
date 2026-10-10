@@ -36,6 +36,7 @@ frontend/node_modules/
 
 # Tools & Local Binaries
 tools/
+cloudflared.exe
 .venv/
 venv/
 ENV/

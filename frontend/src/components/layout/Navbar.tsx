@@ -28,7 +28,7 @@ export const Navbar: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-              University Examination Scheduling System
+              Automated Exam Time Table Generator
             </h1>
           </div>
           <p className="text-[11px] text-slate-500 font-medium">

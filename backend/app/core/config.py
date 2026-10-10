@@ -2,7 +2,7 @@ import os
 from typing import List
 
 class Settings:
-    APP_NAME: str = "The Exam Timetable from Hell"
+    APP_NAME: str = "Automated Exam Time Table Generator"
     APP_VERSION: str = "1.0.0"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = os.getenv("DEBUG", "True").lower() in ("true", "1")

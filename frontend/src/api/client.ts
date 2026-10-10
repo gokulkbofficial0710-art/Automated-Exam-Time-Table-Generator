@@ -5,7 +5,8 @@ import {
   BacklogRecord, BacklogCreateInput, BacklogSummary
 } from '../types';
 
-const BASE_URL = '/api';
+const API_ROOT = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+const BASE_URL = `${API_ROOT}/api`;
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {
